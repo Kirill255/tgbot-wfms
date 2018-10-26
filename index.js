@@ -119,6 +119,36 @@ bot.onText(/\/help (.+)/i, (msg, [_, match]) => {
     bot.sendMessage(id, match, opts);
 });
 
+// это тестовый токен, для реальных данных нужна регистрация в яндекс-кассе
+// 381764678:TEST:7217
+// https://core.telegram.org/bots/payments
+// https://kassa.yandex.ru/blog/telegram
+bot.onText(/\/pay/i, (msg) => {
+    const { id } = msg.chat;
+
+    bot.sendInvoice(
+        id,
+        "Audi A4",
+        "Description for best car",
+        "some_payload",
+        "381764678:TEST:7217",
+        "SOME_RANDOM_STRING_KEY",
+        "RUB",
+        [
+            {
+                label: "audi_a4",
+                amount: 30000 // это 300рублей в копейках, тоесть 300р * 100
+            }
+        ],
+        {
+            photo_url: "https://i.quto.ru/c533x400/4c1b6be47400d.jpeg",
+            need_name: true,
+            need_phone_number: true,
+            is_flexible: true
+        }
+    );
+});
+
 bot.on("callback_query", (query) => {
     // console.log('object :', JSON.stringify(query, null, 2));
     const { id, data } = query;
