@@ -114,6 +114,27 @@ bot.on("text", (msg) => {
     }
 });
 
+bot.on("inline_query", (query) => {
+    // console.log('object :', JSON.stringify(query, null, 2));
+    const { id } = query;
+
+    let results = [];
+    for (let i = 0; i < 5; i++) {
+        results.push({
+            type: "article",
+            id: i.toString(),
+            title: "Title" + i,
+            input_message_content: {
+                message_text: `Article ${i + 1}`
+            }
+        })
+    }
+
+    bot.answerInlineQuery(id, results, {
+        cache_time: 0
+    });
+});
+
 console.log("Start bot");
 
 
