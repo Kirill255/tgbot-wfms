@@ -60,26 +60,46 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => console.log("Server start"));
 */
 
+const inlineKeyboard = [
+    [
+        {
+            "text": "Forward",
+            "callback_data": "forward"
+        },
+        {
+            "text": "Reply",
+            "callback_data": "reply"
+        }
+    ],
+    [
+        {
+            "text": "Edit",
+            "callback_data": "edit"
+        },
+        {
+            "text": "Delete",
+            "callback_data": "delete"
+        }
+    ]
+];
+
+
 bot.on("message", (msg) => {
     // bot.sendMessage(msg.chat.id, JSON.stringify(msg, null, 2)); // для отладки, смотрим что приходит
     const html = `
         <b>Debug, message from ${msg.from.first_name}</b>
         <pre>${JSON.stringify(msg, null, 2)}</pre>
     `;
-    bot.sendMessage(msg.chat.id, html, {
-        parse_mode: "HTML"
-    });
+    // bot.sendMessage(msg.chat.id, html, {
+    //     parse_mode: "HTML"
+    // });
 });
 
 bot.onText(/\/start/i, (msg) => {
     const { id } = msg.chat;
     const opts = {
         reply_markup: JSON.stringify({
-            resize_keyboard: true,
-            one_time_keyboard: true,
-            keyboard: [
-                ["/menu", "/help"],
-            ]
+            inline_keyboard: inlineKeyboard
         })
     };
     bot.sendMessage(id, "Welcome", opts);
@@ -97,6 +117,41 @@ bot.onText(/\/help (.+)/i, (msg, [_, match]) => {
         })
     };
     bot.sendMessage(id, match, opts);
+});
+
+bot.on("callback_query", (query) => {
+    // console.log('object :', JSON.stringify(query, null, 2));
+    const { id, data } = query;
+    const { chat, message_id, text } = query.message;
+
+    switch (data) {
+        case "forward":
+            // куда, откуда, что, можно пересылать и в другой чат, нужно только знать его id
+            bot.forwardMessage(chat.id, chat.id, message_id)
+            break;
+        case "reply":
+            bot.sendMessage(chat.id, "Отвечаем на сообщение", {
+                reply_to_message_id: message_id
+            });
+            break;
+        case "edit":
+            bot.editMessageText(`${text} (edited)`, {
+                chat_id: chat.id,
+                message_id: message_id,
+                reply_markup: JSON.stringify({
+                    inline_keyboard: inlineKeyboard
+                })
+            });
+            break;
+        case "delete":
+            bot.deleteMessage(chat.id, message_id)
+            break;
+    }
+
+    const opts = {
+        text: `Вы нажали ${data}`,
+    };
+    bot.answerCallbackQuery(id, opts)
 });
 
 // смайлы https://ru.piliapp.com/emoji/list/smileys-people/
