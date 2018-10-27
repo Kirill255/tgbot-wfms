@@ -174,15 +174,23 @@ const sendFilmsByQuery = (chatId, query) => {
             return `<b>${i + 1}</b> ${film.name} — /f${film.uuid}`
         }).join("\n");
 
-        bot.sendMessage(chatId, html, {
-            parse_mode: "HTML",
-            reply_markup: {
-                keyboard: keyboards.films
-            }
-        });
+        sendHTML(chatId, html, "films");
     })
 };
 
+const sendHTML = (chatId, html, kbName = null) => {
+    const opts = {
+        parse_mode: "HTML"
+    };
+
+    if (kbName) {
+        opts["reply_markup"] = {
+            keyboard: keyboards[kbName]
+        }
+    }
+
+    bot.sendMessage(chatId, html, opts);
+};
 
 console.log("Start bot");
 
