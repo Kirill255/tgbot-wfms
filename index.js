@@ -138,7 +138,7 @@ bot.on("text", (msg) => {
             break;
         //  кнопка Избранное
         case kb.home.favorite:
-
+            showFavoriteFilms(id, msg.from.id)
             break;
         //  кнопка Кинотеатры
         case kb.home.cinemas:
@@ -380,6 +380,27 @@ const toggleFavoriteFilm = (userId, queryId, { filmUuid, isFavorite }) => {
         }).catch(err => console.log('err :', err));
     }).catch(err => console.log('err :', err));
 }
+
+const showFavoriteFilms = (chatId, userId) => {
+    User.findOne({ telegram_id: userId }).then(user => {
+        if (user) {
+            Film.find({ uuid: { "$in": user.films } }).then(films => {
+                let html;
+                if (films.length) {
+                    html = films.map((film, i) => {
+                        return `<b>${i + 1}</b> ${film.name} <i>${film.rate}</i> — /f${film.uuid}`;
+                    }).join("\n");
+                } else {
+                    html = "Вы пока ничего не добавили!";
+                }
+                sendHTML(chatId, html, "home");
+            }).catch(err => console.log('err :', err));
+        } else {
+            sendHTML(chatId, "Вы пока ничего не добавили!", "home");
+        }
+    }).catch(err => console.log('err :', err));
+}
+
 console.log("Start bot");
 
 
