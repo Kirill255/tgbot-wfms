@@ -289,24 +289,31 @@ bot.on("callback_query", (query) => {
 });
 
 bot.on("inline_query", (query) => {
-    // // console.log('object :', JSON.stringify(query, null, 2));
-    // const { id } = query;
+    // console.log('object :', JSON.stringify(query, null, 2));
+    const { id } = query;
 
-    // let results = [];
-    // for (let i = 0; i < 5; i++) {
-    //     results.push({
-    //         type: "article",
-    //         id: i.toString(),
-    //         title: "Title" + i,
-    //         input_message_content: {
-    //             message_text: `Article ${i + 1}`
-    //         }
-    //     })
-    // }
+    Film.find({}).then(films => {
+        let results = films.map((film, i) => {
+            let caption = `Название: ${film.name}\nГод: ${film.year}\nРейтинг: ${film.rate}\nДлительность: ${film.length}\nСтрана: ${film.country}`;
 
-    // bot.answerInlineQuery(id, results, {
-    //     cache_time: 0
-    // });
+            return {
+                type: "photo",
+                id: film.uuid,
+                photo_url: film.picture,
+                thumb_url: film.picture,
+                caption: caption,
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: `Кинопоиск ${film.name}`, url: film.link }]
+                    ]
+                }
+            }
+        });
+
+        bot.answerInlineQuery(id, results, {
+            cache_time: 0
+        });
+    });
 });
 
 
