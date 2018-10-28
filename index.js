@@ -280,7 +280,7 @@ bot.on("callback_query", (query) => {
     } else if (type === ACTION_TYPE.SHOW_FILMS) {
 
     } else if (type === ACTION_TYPE.SHOW_CINEMAS) {
-
+        sendCinemasByQuery(userId, { uuid: { "$in": data.cinemaUuids } })
     } else if (type === ACTION_TYPE.SHOW_CINEMAS_MAP) {
 
     }
@@ -399,6 +399,16 @@ const showFavoriteFilms = (chatId, userId) => {
             sendHTML(chatId, "Вы пока ничего не добавили!", "home");
         }
     }).catch(err => console.log('err :', err));
+}
+
+const sendCinemasByQuery = (userId, query) => {
+    Cinema.find(query).then(cinemas => {
+        let html = cinemas.map((cinema, i) => {
+            return `<b>${i + 1}</b> ${cinema.name} — /c${cinema.uuid}`;
+        }).join("\n");
+
+        sendHTML(userId, html, "home");
+    });
 }
 
 console.log("Start bot");
