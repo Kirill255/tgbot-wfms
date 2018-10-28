@@ -1,8 +1,6 @@
 require("dotenv").config();
 
 // const express = require("express");
-// const fetch = require("node-fetch");
-// const request = require("request");
 // const app = express();
 // const PORT = process.env.PORT || 5000;
 
@@ -20,7 +18,7 @@ const Film = require("./models/Film");
 const Cinema = require("./models/Cinema");
 const User = require("./models/User");
 
-mongoose.set("debug", true);
+// mongoose.set("debug", true);
 // mongoose.set("useCreateIndex", true);
 mongoose.Promise = global.Promise;
 mongoose.connect(process.env.DB_URL, {
@@ -38,9 +36,9 @@ mongoose.connect(process.env.DB_URL, {
 // database.films.forEach(f => new Film(f).save().catch(err => console.log('err :', err)));
 // database.cinemas.forEach(c => new Cinema(c).save().catch(err => console.log('err :', err)));
 
-
 // =====================================
 
+// типы для callback_data, она ограниченна в размерах, поэтому мы используем этот вспомогательный объект
 const ACTION_TYPE = {
     TOGGLE_FAVORITE_FILM: "tff",
     SHOW_CINEMAS: "sc",
@@ -48,7 +46,6 @@ const ACTION_TYPE = {
     SHOW_FILMS: "sf"
 };
 
-// =====================================
 const keyboards = require("./keyboards");
 const kb = require("./keyboard-buttons");
 
@@ -89,7 +86,6 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => console.log("Server start"));
 */
-
 
 
 bot.on("message", (msg) => {
@@ -156,10 +152,7 @@ bot.on("text", (msg) => {
                 }
             });
             break;
-        default:
-            break;
     }
-
 });
 
 // у нас ссылки на фильм такого вида /ff567 (/f + uuid), чтобы найти их мы ставим этот обработчик
@@ -213,10 +206,6 @@ bot.onText(/\/f(.+)/, (msg, [_, match]) => {
         });
     });
 
-
-    // Film.findOne({ uuid: uuid }).then(film => {
-    //     // console.log('film :', film);
-    // });
 });
 
 bot.onText(/\/c(.+)/, (msg, [_, match]) => {
@@ -235,7 +224,7 @@ bot.onText(/\/c(.+)/, (msg, [_, match]) => {
                             text: "Показать на карте",
                             callback_data: JSON.stringify({
                                 type: ACTION_TYPE.SHOW_CINEMAS_MAP,
-                                lat: cinema.location.latitude,
+                                lat: cinema.location.latitude, // также мы не можем передавать тут вложенные объекты, поэтому у нас тут два отдельных свойства координат
                                 lon: cinema.location.longitude
                             })
                         }
@@ -315,7 +304,6 @@ bot.on("inline_query", (query) => {
         });
     });
 });
-
 
 
 const sendFilmsByQuery = (chatId, query) => {
