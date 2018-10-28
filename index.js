@@ -282,7 +282,8 @@ bot.on("callback_query", (query) => {
     } else if (type === ACTION_TYPE.SHOW_CINEMAS) {
         sendCinemasByQuery(userId, { uuid: { "$in": data.cinemaUuids } })
     } else if (type === ACTION_TYPE.SHOW_CINEMAS_MAP) {
-
+        let { lat, lon } = data;
+        bot.sendLocation(query.message.chat.id, lat, lon)
     }
 
 });
