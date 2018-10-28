@@ -168,8 +168,22 @@ bot.onText(/\/f(.+)/, (msg, [_, match]) => {
     const { id } = msg.chat;
     // console.log('match :', match);
     let uuid = match;
-    Film.findOne({ uuid: uuid }).then(film => {
-        // console.log('film :', film);
+
+    // для того чтобы можно было добалять фильмы в избранное юзера, нам нужно достать этого юзера, а также нам нужен сам фильм 
+    // User.findOne({ telegram_id: msg.from.id }) и Film.findOne({ uuid: uuid })
+    // свяжем эти два промиса
+    Promise.all([
+        Film.findOne({ uuid: uuid }),
+        User.findOne({ telegram_id: msg.from.id })
+    ]).then(([film, user]) => {
+        let isFavorite = false; // сделаем флаг
+
+        if (user) {
+            isFavorite = user.films.indexOf(film.uuid) !== -1; // смотрим добавлен ли фильм в избранное
+        }
+
+        let favoriteText = isFavorite ? "Удалить из избранного" : "Добавить в избранное"; // динамический текст на кнопке
+
         let caption = `Название: ${film.name}\nГод: ${film.year}\nРейтинг: ${film.rate}\nДлительность: ${film.length}\nСтрана: ${film.country}`;
 
         bot.sendPhoto(id, film.picture, {
@@ -178,10 +192,11 @@ bot.onText(/\/f(.+)/, (msg, [_, match]) => {
                 inline_keyboard: [
                     [
                         {
-                            text: "Добавить в избранное",
+                            text: favoriteText,
                             callback_data: JSON.stringify({ // callback_data - должен быть строкой, а мы хотим передать объект, поэтому JSON.stringify()
                                 type: ACTION_TYPE.TOGGLE_FAVORITE_FILM,
-                                filmUuid: film.uuid
+                                filmUuid: film.uuid,
+                                isFavorite: isFavorite
                             })
                         },
                         {
@@ -197,9 +212,13 @@ bot.onText(/\/f(.+)/, (msg, [_, match]) => {
             }
         });
     });
+
+
+    // Film.findOne({ uuid: uuid }).then(film => {
+    //     // console.log('film :', film);
+    // });
 });
 
-// -------
 bot.onText(/\/c(.+)/, (msg, [_, match]) => {
     const { id } = msg.chat;
     // console.log('match :', match);
@@ -245,6 +264,8 @@ bot.on("location", (msg) => {
 bot.on("callback_query", (query) => {
     // console.log('query :', query);
     // console.log('query :', query.data); // '{"type":"sc","cinemaUuids":["c123","c345"]}' - строка
+    const userId = query.from.id;
+
     let data;
     try {
         data = JSON.parse(query.data); // парсим строку
@@ -255,7 +276,7 @@ bot.on("callback_query", (query) => {
     let { type } = data; // берём type
 
     if (type === ACTION_TYPE.TOGGLE_FAVORITE_FILM) {
-
+        toggleFavoriteFilm(userId, query.id, data);
     } else if (type === ACTION_TYPE.SHOW_FILMS) {
 
     } else if (type === ACTION_TYPE.SHOW_CINEMAS) {
@@ -332,6 +353,33 @@ const getCinemasInCoords = (chatId, location) => {
     });
 };
 
+const toggleFavoriteFilm = (userId, queryId, { filmUuid, isFavorite }) => {
+    let userPromise; // сюда сохраним пользователя
+
+    User.findOne({ telegram_id: userId }).then(user => {
+        if (user) { // если есть пользователь
+            if (isFavorite) { // если есть в избранных, то нужно удалить
+                user.films = user.films.filter(fUuid => fUuid !== filmUuid);
+            } else { // если нет, то надо добавить
+                user.films.push(filmUuid);
+            }
+            userPromise = user;
+        } else { // если нет, то нужно создать
+            userPromise = new User({
+                telegram_id: userId,
+                films: [filmUuid]
+            });
+        }
+
+        let answerText = isFavorite ? "Удалено" : "Добавлено";
+
+        userPromise.save().then(_ => {
+            bot.answerCallbackQuery(queryId, {
+                text: answerText
+            })
+        }).catch(err => console.log('err :', err));
+    }).catch(err => console.log('err :', err));
+}
 console.log("Start bot");
 
 
