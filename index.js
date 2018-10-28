@@ -278,7 +278,7 @@ bot.on("callback_query", (query) => {
     if (type === ACTION_TYPE.TOGGLE_FAVORITE_FILM) {
         toggleFavoriteFilm(userId, query.id, data);
     } else if (type === ACTION_TYPE.SHOW_FILMS) {
-
+        sendFilmsByQuery(userId, { uuid: { "$in": data.filmUuids } }) // эта функция нам полностью подходит, хоть и была написана для выбора фильмов по жанру, там мы передавали chatId, а сейчас userId, но для функции нет никакой разницы, на самом деле это одно и тоже значение, просто оно хранится в разных полях в объектах telegram
     } else if (type === ACTION_TYPE.SHOW_CINEMAS) {
         sendCinemasByQuery(userId, { uuid: { "$in": data.cinemaUuids } })
     } else if (type === ACTION_TYPE.SHOW_CINEMAS_MAP) {
@@ -312,6 +312,7 @@ bot.on("inline_query", (query) => {
 
 
 const sendFilmsByQuery = (chatId, query) => {
+    console.log('chatId :', chatId);
     Film.find(query).then(films => {
         // console.log('films :', films);
         let html = films.map((film, i) => {
