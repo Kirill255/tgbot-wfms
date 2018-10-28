@@ -16,9 +16,9 @@ const mongoose = require("mongoose");
 const geolib = require("geolib");
 const _ = require("lodash");
 
-const Film = require("./src/models/Film");
-const Cinema = require("./src/models/Cinema");
-const User = require("./src/models/User");
+const Film = require("./models/Film");
+const Cinema = require("./models/Cinema");
+const User = require("./models/User");
 
 mongoose.set("debug", true);
 // mongoose.set("useCreateIndex", true);
@@ -34,7 +34,7 @@ mongoose.connect(process.env.DB_URL, {
 // у нас есть первоначальные данные в database.json, чтобы занести(проинициализировать) их в нашу базу mongo
 // мы запустим цикл по файлу чтобы создать коллекции, а дальше закомментируем эти строчки, они нужны только для первого запуска
 // можно конечно и вручную создавать документы в mongo, но зачем?
-// const database = require("./database.json");
+// const database = require("../database.json");
 // database.films.forEach(f => new Film(f).save().catch(err => console.log('err :', err)));
 // database.cinemas.forEach(c => new Cinema(c).save().catch(err => console.log('err :', err)));
 
