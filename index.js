@@ -13,8 +13,12 @@ process.env.NTBA_FIX_350 = 1;
 
 const TelegramBot = require("node-telegram-bot-api");
 const mongoose = require("mongoose");
+const geolib = require("geolib");
+const _ = require("lodash");
 
 const Film = require("./src/models/Film");
+const Cinema = require("./src/models/Cinema");
+const User = require("./src/models/User");
 
 mongoose.set("debug", true);
 // mongoose.set("useCreateIndex", true);
@@ -32,6 +36,7 @@ mongoose.connect(process.env.DB_URL, {
 // можно конечно и вручную создавать документы в mongo, но зачем?
 // const database = require("./database.json");
 // database.films.forEach(f => new Film(f).save().catch(err => console.log('err :', err)));
+// database.cinemas.forEach(c => new Cinema(c).save().catch(err => console.log('err :', err)));
 
 
 // =====================================
@@ -128,7 +133,11 @@ bot.on("text", (msg) => {
             break;
         //  кнопка Кинотеатры
         case kb.home.cinemas:
-
+            bot.sendMessage(id, "Отправьте местоположение", {
+                reply_markup: {
+                    keyboard: keyboards.cinemas
+                }
+            })
             break;
         //  кнопка Назад
         case kb.back:
@@ -143,6 +152,54 @@ bot.on("text", (msg) => {
     }
 
 });
+
+// у нас ссылки на фильм такого вида /ff567 (/f + uuid), чтобы найти их мы ставим этот обработчик
+// всё что после /f засовываем в match, тоесть в match у нас наш uuid из базы
+bot.onText(/\/f(.+)/, (msg, [_, match]) => {
+    const { id } = msg.chat;
+    // console.log('match :', match);
+    let uuid = match;
+    Film.findOne({ uuid: uuid }).then(film => {
+        // console.log('film :', film);
+        let caption = `Название: ${film.name}\nГод: ${film.year}\nРейтинг: ${film.rate}\nДлительность: ${film.length}\nСтрана: ${film.country}`;
+
+        bot.sendPhoto(id, film.picture, {
+            caption: caption,
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: "Добавить в избранное", callback_data: "1" }, { text: "Показать кинотеатры", callback_data: "1" }],
+                    [{ text: `Кинопоиск ${film.name}`, url: film.link }]
+                ]
+            }
+        });
+    });
+});
+
+// -------
+bot.onText(/\/c(.+)/, (msg, [_, match]) => {
+    const { id } = msg.chat;
+    // console.log('match :', match);
+    let uuid = match;
+    Cinema.findOne({ uuid: uuid }).then(cinema => {
+        // console.log('film :', film);
+
+        bot.sendMessage(id, `Кинотеатр ${cinema.name}`, {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: cinema.name, url: cinema.url }, { text: "Показать на карте", callback_data: "1" }],
+                    [{ text: "Показать фильмы", callback_data: "1" }]
+                ]
+            }
+        });
+    });
+});
+
+bot.on("location", (msg) => {
+    const { id } = msg.chat;
+    const { location } = msg;
+    getCinemasInCoords(id, location);
+});
+
 
 bot.on("inline_query", (query) => {
     // // console.log('object :', JSON.stringify(query, null, 2));
@@ -190,6 +247,24 @@ const sendHTML = (chatId, html, kbName = null) => {
     }
 
     bot.sendMessage(chatId, html, opts);
+};
+
+const getCinemasInCoords = (chatId, location) => {
+    Cinema.find({}).then(cinemas => {
+        // console.log('cinemas :', cinemas);
+        // высчитать расстояние до кинотеатра
+        cinemas.forEach(c => {
+            c.distance = geolib.getDistance(location, c.location) / 1000 // теперь значение получается в км, было в м
+        });
+        // отсортировать
+        cinemas = _.sortBy(cinemas, "distance");
+
+        let html = cinemas.map((cinema, i) => {
+            return `<b>${i + 1}</b> ${cinema.name}. <em>Расстояние: </em><b>${cinema.distance} км.</b> — /c${cinema.uuid}`
+        }).join("\n");
+
+        sendHTML(chatId, html, "home");
+    });
 };
 
 console.log("Start bot");
