@@ -40,6 +40,15 @@ mongoose.connect(process.env.DB_URL, {
 
 
 // =====================================
+
+const ACTION_TYPE = {
+    TOGGLE_FAVORITE_FILM: "tff",
+    SHOW_CINEMAS: "sc",
+    SHOW_CINEMAS_MAP: "scm",
+    SHOW_FILMS: "sf"
+};
+
+// =====================================
 const keyboards = require("./keyboards");
 const kb = require("./keyboard-buttons");
 
@@ -167,7 +176,22 @@ bot.onText(/\/f(.+)/, (msg, [_, match]) => {
             caption: caption,
             reply_markup: {
                 inline_keyboard: [
-                    [{ text: "Добавить в избранное", callback_data: "1" }, { text: "Показать кинотеатры", callback_data: "1" }],
+                    [
+                        {
+                            text: "Добавить в избранное",
+                            callback_data: JSON.stringify({ // callback_data - должен быть строкой, а мы хотим передать объект, поэтому JSON.stringify()
+                                type: ACTION_TYPE.TOGGLE_FAVORITE_FILM,
+                                filmUuid: film.uuid
+                            })
+                        },
+                        {
+                            text: "Показать кинотеатры",
+                            callback_data: JSON.stringify({
+                                type: ACTION_TYPE.SHOW_CINEMAS,
+                                cinemaUuids: film.cinemas
+                            })
+                        }
+                    ],
                     [{ text: `Кинопоиск ${film.name}`, url: film.link }]
                 ]
             }
@@ -186,8 +210,26 @@ bot.onText(/\/c(.+)/, (msg, [_, match]) => {
         bot.sendMessage(id, `Кинотеатр ${cinema.name}`, {
             reply_markup: {
                 inline_keyboard: [
-                    [{ text: cinema.name, url: cinema.url }, { text: "Показать на карте", callback_data: "1" }],
-                    [{ text: "Показать фильмы", callback_data: "1" }]
+                    [
+                        { text: cinema.name, url: cinema.url },
+                        {
+                            text: "Показать на карте",
+                            callback_data: JSON.stringify({
+                                type: ACTION_TYPE.SHOW_CINEMAS_MAP,
+                                lat: cinema.location.latitude,
+                                lon: cinema.location.longitude
+                            })
+                        }
+                    ],
+                    [
+                        {
+                            text: "Показать фильмы",
+                            callback_data: JSON.stringify({
+                                type: ACTION_TYPE.SHOW_FILMS,
+                                filmUuids: cinema.films
+                            })
+                        }
+                    ]
                 ]
             }
         });
@@ -200,6 +242,29 @@ bot.on("location", (msg) => {
     getCinemasInCoords(id, location);
 });
 
+bot.on("callback_query", (query) => {
+    // console.log('query :', query);
+    // console.log('query :', query.data); // '{"type":"sc","cinemaUuids":["c123","c345"]}' - строка
+    let data;
+    try {
+        data = JSON.parse(query.data); // парсим строку
+    } catch (error) {
+        throw new Error("Data is not an object")
+    }
+
+    let { type } = data; // берём type
+
+    if (type === ACTION_TYPE.TOGGLE_FAVORITE_FILM) {
+
+    } else if (type === ACTION_TYPE.SHOW_FILMS) {
+
+    } else if (type === ACTION_TYPE.SHOW_CINEMAS) {
+
+    } else if (type === ACTION_TYPE.SHOW_CINEMAS_MAP) {
+
+    }
+
+});
 
 bot.on("inline_query", (query) => {
     // // console.log('object :', JSON.stringify(query, null, 2));
